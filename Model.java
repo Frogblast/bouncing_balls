@@ -1,6 +1,5 @@
 package bouncing_balls;
 
-import static java.lang.Math.abs;
 
 /**
  * The physics model.
@@ -41,7 +40,7 @@ class Model {
 			if (b.y < b.radius || b.y > areaHeight - b.radius) {
 				b.vy *= -1;
 			}
-			
+
 			// compute new position according to the speed of the ball
 			b.x += deltaT * b.vx;
 			b.y += deltaT * b.vy;
@@ -69,9 +68,37 @@ class Model {
 		}
 	}
 
-	private static void applyCollisionForce(Ball b, Ball b2) {
-		b.vx *= -1;
-		b2.vx *= -1;
+	private static void applyCollisionForce(Ball b1, Ball b2) {
+		// mass m assumed to be relative to the radius
+		// u is velocity before collision and v is after
+		double m1 = b1.radius;
+		double m2 = b2.radius;
+		double uX1 = b1.vx;
+		double uY1 = b1.vy;
+		double uX2 = b2.vx;
+		double uY2 = b2.vy;
+
+		double x1 = b1.x; // current positions for calculating the line between their centers
+		double x2 = b2.x;
+		double y1 = b1.y;
+		double y2 = b2.y;
+
+		// Center vector or line between the balls' centers on collision
+		double dx = x2 - x1;
+		double dy = y2 - y1;
+		double magnitude = Math.sqrt(dx * dx + dy * dy);
+		double[] centerVector = { dx / magnitude, dy / magnitude }; // Unit vector
+
+
+		double hypotenuse = Math.sqrt(centerVector[0]*centerVector[0] + centerVector[1]*centerVector[1]);
+		double cosAngle = centerVector[0]/hypotenuse;
+		double sinAngle = centerVector[1]/hypotenuse;
+
+		// new direction (apply the rotation matrix to the initial directions)
+		b1.vx = uX1*cosAngle - uY1*sinAngle;
+		b1.vy = uX1*sinAngle + uY1*cosAngle;
+		b2.vx = uX2*cosAngle - uY2*sinAngle;
+		b2.vy = uX2*sinAngle + uY2*cosAngle;
 	}
 
 	/**
