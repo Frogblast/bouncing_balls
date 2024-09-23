@@ -50,21 +50,30 @@ class Model {
 			b.vy = b.vy + g*deltaT;
 
 			// handle collisions with the other ball(s?)
-			for(Ball b2 : balls){
-				if (b == b2) break;
+			handleTwoBallsColliding(b);
+		}
+	}
 
-				// hypothenuse of the right triangle where distance between x coordinates is the first cathesis
-					// and the distance between y coordinates is the second cathesis, must be the same as the sum of the balls's radii.
-					// the hypothenuse and the sum of radii are both squared in order to not having to take the costly square root.
-				double distanceSquared = Math.pow((b2.x - b.x),2) + Math.pow((b2.y - b.y), 2);
-				if (distanceSquared <= Math.pow(b.radius + b2.radius, 2)){
-					b.vx *= -1;
-					b2.vx *= -1;
-				}
+	private void handleTwoBallsColliding(Ball b) {
+		for(Ball b2 : balls){
+			if (b == b2) break;
+
+			// The two balls collide when the sum of their radii are equal to the length of the hypotenuse
+				// of the right triangle where distance between x coordinates is the first leg
+				// and the distance between y coordinates is the second leg.
+				// the hypotenuse and the sum of radii are both squared in order to not having to take the costly square root...
+			double distanceSquared = Math.pow((b2.x - b.x),2) + Math.pow((b2.y - b.y), 2);
+			if (distanceSquared <= Math.pow(b.radius + b2.radius, 2)){
+				applyCollisionForce(b, b2);
 			}
 		}
 	}
-	
+
+	private static void applyCollisionForce(Ball b, Ball b2) {
+		b.vx *= -1;
+		b2.vx *= -1;
+	}
+
 	/**
 	 * Simple inner class describing balls.
 	 */
