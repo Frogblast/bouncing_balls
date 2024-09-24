@@ -30,14 +30,14 @@ class Model {
 	void step(double deltaT) {
 		// TODO this method implements one step of simulation with a step deltaT
 		float g = -9.8f; // acceleration of gravity
-		double collisionThreshold = 0.0001;
+		double collisionMargin = 0.01;
 
 		for (Ball b : balls) {
 			// detect collision with the border
-			if (b.x < b.radius || b.x > areaWidth - b.radius) {
+			if (b.x - collisionMargin < b.radius || b.x + collisionMargin > areaWidth - b.radius) {
 				b.vx *= -1; // change direction of ball
 			}
-			if (b.y < b.radius || b.y > areaHeight - b.radius) {
+			if (b.y - collisionMargin < b.radius || b.y + collisionMargin > areaHeight - b.radius) {
 				b.vy *= -1;
 			}
 
@@ -49,26 +49,25 @@ class Model {
 			b.vy = b.vy + g*deltaT;
 
 			// handle collisions with the other ball(s?)
-			handleTwoBallsColliding(b);
+			handleTwoBallsColliding(b, collisionMargin);
 		}
 	}
 
-	private void handleTwoBallsColliding(Ball b) {
+	private void handleTwoBallsColliding(Ball b, double collisionMargin) {
 		for(Ball b2 : balls){
 			if (b == b2) break;
-
 			// The two balls collide when the sum of their radii are equal to the length of the hypotenuse
 				// of the right triangle where distance between x coordinates is the first leg
 				// and the distance between y coordinates is the second leg.
 				// the hypotenuse and the sum of radii are both squared in order to not having to take the costly square root...
 			double distanceSquared = Math.pow((b2.x - b.x),2) + Math.pow((b2.y - b.y), 2);
-			if (distanceSquared <= Math.pow(b.radius + b2.radius, 2)){
-				applyCollisionForce(b, b2);
+			if (distanceSquared <= Math.pow(b.radius + b2.radius, 2) + collisionMargin){
+				transferMomentum(b, b2);
 			}
 		}
 	}
 
-	private static void applyCollisionForce(Ball b1, Ball b2) {
+	private static void transferMomentum(Ball b1, Ball b2) {
 		// mass m assumed to be relative to the radius
 		// u is velocity before collision and v is after
 		double m1 = b1.radius;
@@ -78,27 +77,31 @@ class Model {
 		double uX2 = b2.vx;
 		double uY2 = b2.vy;
 
-		double x1 = b1.x; // current positions for calculating the line between their centers
-		double x2 = b2.x;
-		double y1 = b1.y;
-		double y2 = b2.y;
+		// current positions for calculating the line between their centers
+		double pX1 = b1.x;
+		double pX2 = b2.x;
+		double pY1 = b1.y;
+		double pY2 = b2.y;
 
-		// Center vector or line between the balls' centers on collision
-		double dx = x2 - x1;
-		double dy = y2 - y1;
-		double magnitude = Math.sqrt(dx * dx + dy * dy);
-		double[] centerVector = { dx / magnitude, dy / magnitude }; // Unit vector
+		// Line between the balls' centers on collision which is the direction in which the momentum is transferred. This becomes the new x-axis.
+		double distX = pX2 - pX1;
+		double distY = pY2 - pY1;
+		double magnitude = Math.sqrt(distX * distX + distY * distY);
+		double[] momentumVector = { distX / magnitude, distY / magnitude }; // Make it a unit vector
 
+		// Project the initial velocities unto the momentum vector
+		double u1projected = uX1*momentumVector[0] + uY1*momentumVector[1];
+		double u2projected = uX2*momentumVector[0] + uY2*momentumVector[1];
 
-		double hypotenuse = Math.sqrt(centerVector[0]*centerVector[0] + centerVector[1]*centerVector[1]);
-		double cosAngle = centerVector[0]/hypotenuse;
-		double sinAngle = centerVector[1]/hypotenuse;
+		// swap velocities
+		double temp = u1projected;
+		u1projected = u2projected;
+		u2projected = temp;
 
-		// new direction (apply the rotation matrix to the initial directions)
-		b1.vx = uX1*cosAngle - uY1*sinAngle;
-		b1.vy = uX1*sinAngle + uY1*cosAngle;
-		b2.vx = uX2*cosAngle - uY2*sinAngle;
-		b2.vy = uX2*sinAngle + uY2*cosAngle;
+		b1.vx = u1projected*momentumVector[0];
+		b1.vy = u1projected*momentumVector[1];
+		b2.vx = u2projected*momentumVector[0];
+		b2.vy = u2projected*momentumVector[1];
 	}
 
 	/**
