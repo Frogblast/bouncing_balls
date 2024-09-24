@@ -6,31 +6,29 @@ import java.util.Random;
 
 /**
  * The physics model.
- * 
+ *
  * This class is where you should implement your bouncing balls model.
- * 
+ *
  * The code has intentionally been kept as simple as possible, but if you wish, you can improve the design.
- * 
+ *
  * @author Simon Robillard
  *
  */
 class Model {
 
 	double areaWidth, areaHeight;
-	
+
 	Ball [] balls;
 
 	Model(double width, double height) {
 		areaWidth = width;
 		areaHeight = height;
-		
+
 		// Initialize the model with a few balls
 		balls = new Ball[3];
-		Color[] colorChoices = { Color.RED, Color.BLUE, Color.GREEN, Color.ORANGE, Color.YELLOW, Color.CYAN, Color.MAGENTA };
-		Random random = new Random();
-		balls[0] = new Ball(width / 3, height * 0.9, 1.2, 1.6, 0.2, colorChoices[random.nextInt(0,colorChoices.length-1)]);
-		balls[1] = new Ball(2 * width / 3, height * 0.7, -0.6, 0.6, 0.3, colorChoices[random.nextInt(0,colorChoices.length-1)]);
-		balls[2] = new Ball(4 * width / 6, height * 0.5, -1.5, 0.3, 0.1, colorChoices[random.nextInt(0,colorChoices.length-1)]);
+		balls[0] = new Ball(width / 3, height * 0.9, 1.2, 1.6, 0.2, Color.BLUE);
+		balls[1] = new Ball(2 * width / 3, height * 0.7, -0.6, 0.6, 0.3, Color.RED);
+		balls[2] = new Ball(4 * width / 6, height * 0.5, -1.5, 0.3, 0.1, Color.GREEN);
 
 	}
 
@@ -68,9 +66,9 @@ class Model {
 			if (b == b2) break;
 
 			// The two balls collide when the sum of their radii are equal to the length of the hypotenuse
-				// of the right triangle where distance between x coordinates is the first leg
-				// and the distance between y coordinates is the second leg.
-				// the hypotenuse and the sum of radii are both squared in order to not having to take the costly square root...
+			// of the right triangle where distance between x coordinates is the first leg
+			// and the distance between y coordinates is the second leg.
+			// the hypotenuse and the sum of radii are both squared in order to not having to take the costly square root...
 			if (b.collisionTimer > collisionTimer*2){
 				double distanceSquared = Math.pow((b2.x - b.x),2) + Math.pow((b2.y - b.y), 2);
 				if (distanceSquared <= Math.pow(b.radius + b2.radius, 2) + collisionMargin){
@@ -105,7 +103,8 @@ class Model {
 		double magnitude = Math.sqrt(distX * distX + distY * distY);
 		double[] momentumVector = { distX / magnitude, distY / magnitude }; // Make it a unit vector
 
-		// Project the initial velocities unto the momentum vector (or new x-axis)
+		// Project the initial velocities unto the momentum vector (or new x-axis). OBS! Scalar and not vector! Needs to be multiplied back onto
+		// the momentumVector in order to find the correct vectors (or values for their x and y components)
 		double u1projected = uX1*momentumVector[0] + uY1*momentumVector[1];
 		double u2projected = uX2*momentumVector[0] + uY2*momentumVector[1];
 
@@ -127,11 +126,11 @@ class Model {
 	 */
 	class Ball {
 		/*Collision timer increases with deltaT on each step. If this number is above a certain threshold
-		* the collision will register and this timer will be set to 0. An ugly bug fix...
-		* */
+		 * the collision will register and this timer will be set to 0. An ugly bug fix...
+		 * */
 		double collisionTimer = 0;
 		Color color;
-		
+
 		Ball(double x, double y, double vx, double vy, double r, Color c) {
 			this.x = x;
 			this.y = y;
