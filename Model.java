@@ -1,6 +1,9 @@
 package bouncing_balls;
 
 
+import java.awt.*;
+import java.util.Random;
+
 /**
  * The physics model.
  * 
@@ -22,17 +25,24 @@ class Model {
 		areaHeight = height;
 		
 		// Initialize the model with a few balls
-		balls = new Ball[2];
-		balls[0] = new Ball(width / 3, height * 0.9, 1.2, 1.6, 0.2);
-		balls[1] = new Ball(2 * width / 3, height * 0.7, -0.6, 0.6, 0.3);
+		balls = new Ball[3];
+		Color[] colorChoices = { Color.RED, Color.BLUE, Color.GREEN, Color.ORANGE, Color.YELLOW, Color.CYAN, Color.MAGENTA };
+		Random random = new Random();
+		balls[0] = new Ball(width / 3, height * 0.9, 1.2, 1.6, 0.2, colorChoices[random.nextInt(0,colorChoices.length-1)]);
+		balls[1] = new Ball(2 * width / 3, height * 0.7, -0.6, 0.6, 0.3, colorChoices[random.nextInt(0,colorChoices.length-1)]);
+		balls[2] = new Ball(4 * width / 6, height * 0.5, -1.5, 0.3, 0.1, colorChoices[random.nextInt(0,colorChoices.length-1)]);
+
 	}
 
 	void step(double deltaT) {
 		// TODO this method implements one step of simulation with a step deltaT
 		float g = -9.8f; // acceleration of gravity
-		double collisionMargin = 0.01;
+		double collisionMargin = 0.01; // to avoid overlapping
 
 		for (Ball b : balls) {
+
+			b.collisionTimer += deltaT;
+
 			// detect collision with the border
 			if (b.x - collisionMargin < b.radius || b.x + collisionMargin > areaWidth - b.radius) {
 				b.vx *= -1; // change direction of ball
@@ -49,20 +59,24 @@ class Model {
 			b.vy = b.vy + g*deltaT;
 
 			// handle collisions with the other ball(s?)
-			handleTwoBallsColliding(b, collisionMargin);
+			handleTwoBallsColliding(b, collisionMargin, deltaT);
 		}
 	}
 
-	private void handleTwoBallsColliding(Ball b, double collisionMargin) {
+	private void handleTwoBallsColliding(Ball b, double collisionMargin, double collisionTimer) {
 		for(Ball b2 : balls){
 			if (b == b2) break;
+
 			// The two balls collide when the sum of their radii are equal to the length of the hypotenuse
 				// of the right triangle where distance between x coordinates is the first leg
 				// and the distance between y coordinates is the second leg.
 				// the hypotenuse and the sum of radii are both squared in order to not having to take the costly square root...
-			double distanceSquared = Math.pow((b2.x - b.x),2) + Math.pow((b2.y - b.y), 2);
-			if (distanceSquared <= Math.pow(b.radius + b2.radius, 2) + collisionMargin){
-				transferMomentum(b, b2);
+			if (b.collisionTimer > collisionTimer*2){
+				double distanceSquared = Math.pow((b2.x - b.x),2) + Math.pow((b2.y - b.y), 2);
+				if (distanceSquared <= Math.pow(b.radius + b2.radius, 2) + collisionMargin){
+					transferMomentum(b, b2);
+					b.collisionTimer = 0;
+				}
 			}
 		}
 	}
@@ -72,6 +86,8 @@ class Model {
 		// u is velocity before collision and v is after
 		double m1 = b1.radius;
 		double m2 = b2.radius;
+
+		// initial velocities (x and y respectively)
 		double uX1 = b1.vx;
 		double uY1 = b1.vy;
 		double uX2 = b2.vx;
@@ -83,21 +99,23 @@ class Model {
 		double pY1 = b1.y;
 		double pY2 = b2.y;
 
-		// Line between the balls' centers on collision which is the direction in which the momentum is transferred. This becomes the new x-axis.
+		// Line between the balls' centers on collision which is the direction of the transferred momentum. (This becomes the new x-axis).
 		double distX = pX2 - pX1;
 		double distY = pY2 - pY1;
 		double magnitude = Math.sqrt(distX * distX + distY * distY);
 		double[] momentumVector = { distX / magnitude, distY / magnitude }; // Make it a unit vector
 
-		// Project the initial velocities unto the momentum vector
+		// Project the initial velocities unto the momentum vector (or new x-axis)
 		double u1projected = uX1*momentumVector[0] + uY1*momentumVector[1];
 		double u2projected = uX2*momentumVector[0] + uY2*momentumVector[1];
 
-		// swap velocities
+		// swap velocities (since the velocities are now projected to the direction of momentum they can now be exchanged).
+		// TODO: take masses and the law of preservation of kinetic energy (elastic collision) into account
 		double temp = u1projected;
 		u1projected = u2projected;
 		u2projected = temp;
 
+		// the exchanged velocities projected to the correct axes. This is the final velocities
 		b1.vx = u1projected*momentumVector[0];
 		b1.vy = u1projected*momentumVector[1];
 		b2.vx = u2projected*momentumVector[0];
@@ -108,13 +126,19 @@ class Model {
 	 * Simple inner class describing balls.
 	 */
 	class Ball {
+		/*Collision timer increases with deltaT on each step. If this number is above a certain threshold
+		* the collision will register and this timer will be set to 0. An ugly bug fix...
+		* */
+		double collisionTimer = 0;
+		Color color;
 		
-		Ball(double x, double y, double vx, double vy, double r) {
+		Ball(double x, double y, double vx, double vy, double r, Color c) {
 			this.x = x;
 			this.y = y;
 			this.vx = vx;
 			this.vy = vy;
 			this.radius = r;
+			this.color = c;
 		}
 
 		/**

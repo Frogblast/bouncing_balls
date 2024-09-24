@@ -8,6 +8,7 @@ import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.Ellipse2D;
+import java.util.Random;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.Timer;
@@ -67,8 +68,10 @@ public final class Animator extends JPanel implements ActionListener {
 		g2.setColor(Color.WHITE);
 		g2.fillRect(0, 0, this.getWidth(), this.getHeight());
 		// draw balls
-		g2.setColor(Color.RED);
+
+
 		for (Ball b : model.balls) {
+			g2.setColor(b.color);
 			double x = b.x - b.radius;
 			double y = b.y + b.radius;
 			// paint balls (y-coordinates are inverted)
